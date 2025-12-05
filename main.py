@@ -1,8 +1,9 @@
 import pandas as pd
 import glob
+import duckdb
 
 # folder path
-folder_path = "E:\Veritas Debate League\Registration"
+folder_path = "E:/Veritas Debate League/Registration/Nov. 29"
 
 def merge_excel_files(end_path):
     """
@@ -12,24 +13,48 @@ def merge_excel_files(end_path):
 
     excel_files = glob.glob(f"{folder_path}/{end_path}/*.xlsx")
 
-    dataframes = [pd.read_excel(file) for file in excel_files]
+    dataframes = []
+    for file in excel_files:
+        try:
+            df = pd.read_excel(file)
+            dataframes.append(df)
+        except Exception as e:
+            print(f"Could not read {file.title}: {e}")
+
     for df in dataframes:
-        # Convert column to numeric type
-        df['Speaker 1 Phone'] = df['Speaker 1 Phone'].astype('str')
-        df['Speaker 2 Phone'] = df['Speaker 2 Phone'].astype('str')
-        df['Speaker 3 Phone'] = df['Speaker 3 Phone'].astype('str')
-        df.drop_duplicates(keep="last")
-        df.astype(str)
-        df.info()
-        print(df.dtypes)
+        try:
+            # Convert column to numeric type
+            df['Speaker 1 Phone'] = df['Speaker 1 Phone'].astype('str')
+            df['Speaker 2 Phone'] = df['Speaker 2 Phone'].astype('str')
+            df['Speaker 3 Phone'] = df['Speaker 3 Phone'].astype('str')
+            df.drop_duplicates(keep="last")
+            df.astype(str)
+        except Exception as e:
+            print(f" Exception in one of the {df.keys()}: {e}")
 
     final_df = pd.concat(dataframes, ignore_index=True).astype(str)
 
-    final_df.to_excel(f"E:/Veritas Debate League/Registration/{end_path}.xlsx", index=False)
-    print(final_df.head())  # Display the first few rows
-    print(final_df.columns)  # Display the first few rows
+    final_df.to_excel(f"{folder_path}/{end_path}.xlsx", index=False)
     return final_df
+
+def tabroom_format(file, end_path):
+    """
+    @param file: Excel file path
+    @return: DataFrame formatted for Tabroom import
+    currently has error of no output in whatever row that doesnt have one of the selected columns filled. NEED TO FIX
+    """
+    df = pd.read_excel(file)
+
+    # Example formatting steps (customize as needed)
+    df['Speaker Names'] = df['Speaker 1 Last'] + ' & ' + df['Speaker 2 Last'] + ' & ' + df['Speaker 3 Last']
+    df['School'] = df['School Name']
+
+    # Select relevant columns for Tabroom
+    tabroom_df = df[['Speaker Names','School']]
+
+    tabroom_df.to_excel(f"{folder_path}\Tabroom-{end_path}.xlsx", index=False)
+    return tabroom_df
 
 
 merge_excel_files("High School")
-# merge_excel_files("Middle School")
+merge_excel_files("Middle School")
