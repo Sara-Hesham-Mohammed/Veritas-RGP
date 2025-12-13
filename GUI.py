@@ -1,143 +1,75 @@
-# Copyright (C) 2013 Riverbank Computing Limited.
-# Copyright (C) 2022 The Qt Company Ltd.
-# SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
-from __future__ import annotations
-
-import sys
-from PySide6.QtCore import (QDate, QDateTime, QRegularExpression,
-                            QSortFilterProxyModel, QTime, Qt, Slot)
-from PySide6.QtGui import QStandardItemModel
-from PySide6.QtWidgets import (QApplication, QComboBox, QGridLayout,
-                               QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                               QTreeView, QVBoxLayout, QWidget)
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtGui import QAction, QPixmapCache, QPixmap
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QLineEdit, QMenu
 
 
-REGULAR_EXPRESSION = 0
-WILDCARD = 1
-FIXED_STRING = 2
-
-
-class Window(QWidget):
+# Subclass QMainWindow to customize your application's main window
+class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
-        self._proxy_model = QSortFilterProxyModel()
-        self._proxy_model.setDynamicSortFilter(True)
-
-        self._proxy_group_box = QGroupBox("Sorted/Filtered Model")
-
-        self._source_view = QTreeView()
-        self._source_view.setRootIsDecorated(False)
-        self._source_view.setAlternatingRowColors(True)
-
-        self._proxy_view = QTreeView()
-        self._proxy_view.setRootIsDecorated(False)
-        self._proxy_view.setAlternatingRowColors(True)
-        self._proxy_view.setModel(self._proxy_model)
-        self._proxy_view.setSortingEnabled(True)
-
-        self._filter_pattern_line_edit = QLineEdit()
-        self._filter_pattern_line_edit.setClearButtonEnabled(True)
-        self._filter_pattern_label = QLabel("&Filter pattern:")
-        self._filter_pattern_label.setBuddy(self._filter_pattern_line_edit)
-
-        self._filter_syntax_combo_box = QComboBox()
-        self._filter_syntax_combo_box.addItem("Regular expression",
-                                              REGULAR_EXPRESSION)
-        self._filter_syntax_combo_box.addItem("Wildcard",
-                                              WILDCARD)
-        self._filter_syntax_combo_box.addItem("Fixed string",
-                                              FIXED_STRING)
-        self._filter_syntax_label = QLabel("Filter &syntax:")
-        self._filter_syntax_label.setBuddy(self._filter_syntax_combo_box)
-
-        self._filter_pattern_line_edit.textChanged.connect(self.filter_reg_exp_changed)
-        self._filter_syntax_combo_box.currentIndexChanged.connect(self.filter_reg_exp_changed)
-
-        source_layout = QHBoxLayout()
-        source_layout.addWidget(self._source_view)
-
-        proxy_layout = QGridLayout()
-        proxy_layout.addWidget(self._proxy_view, 0, 0, 1, 3)
-        proxy_layout.addWidget(self._filter_pattern_label, 1, 0)
-        proxy_layout.addWidget(self._filter_pattern_line_edit, 1, 1, 1, 2)
-        proxy_layout.addWidget(self._filter_syntax_label, 2, 0)
-        proxy_layout.addWidget(self._filter_syntax_combo_box, 2, 1, 1, 2)
-        self._proxy_group_box.setLayout(proxy_layout)
-
-        main_layout = QVBoxLayout()
-
-        main_layout.addWidget(self._proxy_group_box)
-        self.setLayout(main_layout)
-
-        self.setWindowTitle("Basic Sort/Filter Model")
-        self.resize(500, 450)
-
-        self._proxy_view.sortByColumn(1, Qt.SortOrder.AscendingOrder)
-
-        self._filter_pattern_line_edit.setText("Andy|Grace")
-
-    def set_source_model(self, model):
-        self._proxy_model.setSourceModel(model)
-        self._source_view.setModel(model)
-
-    @Slot()
-    def filter_reg_exp_changed(self):
-        syntax_nr = self._filter_syntax_combo_box.currentData()
-        pattern = self._filter_pattern_line_edit.text()
-        if syntax_nr == WILDCARD:
-            pattern = QRegularExpression.wildcardToRegularExpression(pattern)
-        elif syntax_nr == FIXED_STRING:
-            pattern = QRegularExpression.escape(pattern)
-
-        reg_exp = QRegularExpression(pattern)
-
-        self._proxy_model.setFilterRegularExpression(reg_exp)
+        self.setWindowTitle("My App")
 
 
+        #does it have to be above the layout and container???
+        #or can it be below, along with the addwidget fn?
+        self.label = QLabel()
+        self.icons = []
+
+        icon_paths = ['./Icons/img.png', './Icons/img_1.png', './Icons/img_2.png']
+
+        picmaps = []
+
+        for path in icon_paths:
+            pic_label = QLabel()
+            pixmap = QPixmap(path).scaled(75, 75, aspectRatioMode=Qt.AspectRatioMode.IgnoreAspectRatio,
+                    transformMode=Qt.TransformationMode.SmoothTransformation)
+            picmaps.append(pixmap)
+            pic_label.setPixmap(pixmap)
+            self.icons.append(pic_label)
+
+        self.input = QLineEdit()
 
 
-def add_mail(model, subject, sender, date):
-    model.insertRow(0)
-    model.setData(model.index(0, 0), subject)
-    model.setData(model.index(0, 1), sender)
-    model.setData(model.index(0, 2), date)
+        layout = QVBoxLayout()
+        layout.addWidget(self.input)
+        layout.addWidget(self.label)
+        for icon in self.icons:
+            layout.addWidget(icon)
+
+        container = QWidget()
+        container.setLayout(layout)
 
 
-def create_mail_model(parent):
-    model = QStandardItemModel(0, 3, parent)
+        self.button = QPushButton("Upload Files")
+        self.button.setMaximumSize(QSize(200, 100))
+        self.button.clicked.connect(self.on_click)
+        self.setMinimumSize(QSize(400, 300))
 
-    model.setHeaderData(0, Qt.Orientation.Horizontal, "Subject")
-    model.setHeaderData(1, Qt.Orientation.Horizontal, "Sender")
-    model.setHeaderData(2, Qt.Orientation.Horizontal, "Date")
+        layout.addWidget(self.button)
 
-    add_mail(model, "Happy New Year!", "Grace K. <grace@software-inc.com>",
-             QDateTime(QDate(2006, 12, 31), QTime(17, 3)))
-    add_mail(model, "Radically new concept", "Grace K. <grace@software-inc.com>",
-             QDateTime(QDate(2006, 12, 22), QTime(9, 44)))
-    add_mail(model, "Accounts", "pascale@nospam.com",
-             QDateTime(QDate(2006, 12, 31), QTime(12, 50)))
-    add_mail(model, "Expenses", "Joe Bloggs <joe@bloggs.com>",
-             QDateTime(QDate(2006, 12, 25), QTime(11, 39)))
-    add_mail(model, "Re: Expenses", "Andy <andy@nospam.com>",
-             QDateTime(QDate(2007, 1, 2), QTime(16, 5)))
-    add_mail(model, "Re: Accounts", "Joe Bloggs <joe@bloggs.com>",
-             QDateTime(QDate(2007, 1, 3), QTime(14, 18)))
-    add_mail(model, "Re: Accounts", "Andy <andy@nospam.com>",
-             QDateTime(QDate(2007, 1, 3), QTime(14, 26)))
-    add_mail(model, "Sports", "Linda Smith <linda.smith@nospam.com>",
-             QDateTime(QDate(2007, 1, 5), QTime(11, 33)))
-    add_mail(model, "AW: Sports", "Rolf Newschweinstein <rolfn@nospam.com>",
-             QDateTime(QDate(2007, 1, 5), QTime(12, 0)))
-    add_mail(model, "RE: Sports", "Petra Schmidt <petras@nospam.com>",
-             QDateTime(QDate(2007, 1, 5), QTime(12, 1)))
+        # Set the central widget of the Window.
+        self.setCentralWidget(container)
 
-    return model
+    def on_click(self):
+        print("CLICKED")
+        self.button.setText("You already clicked me.")
+        self.button.setEnabled(False)
+
+        self.label.setText(self.input.text())
 
 
-if __name__ == '__main__':
-    app = QApplication(sys.argv)
-    window = Window()
-    window.set_source_model(create_mail_model(window))
-    window.show()
-    sys.exit(app.exec())
+    def contextMenuEvent(self, e):
+        context = QMenu(self)
+        context.addAction(QAction("test 1", self))
+        context.addAction(QAction("test 2", self))
+        context.addAction(QAction("test 3", self))
+        context.exec(e.globalPos())
+
+
+app = QApplication([])
+
+window = MainWindow()
+window.show()
+
+app.exec()
