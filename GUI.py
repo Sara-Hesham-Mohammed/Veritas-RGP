@@ -1,63 +1,36 @@
 from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtGui import QAction, QPixmapCache, QPixmap
-from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QLineEdit, QMenu
+from PyQt6.QtWidgets import QApplication, QMainWindow, QPushButton, QWidget, QVBoxLayout, QLabel, QLineEdit, QMenu, \
+    QHBoxLayout, QTableWidget
+from Components.Footer import Footer
+from Components.utils import InputBox, UploadBox, Button, Table
 
 
-# Subclass QMainWindow to customize your application's main window
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle("My App")
 
+        self.input = InputBox("Second Input: ")
+        self.upload_box = UploadBox()
+        self.table = Table()
+        self.button = Button(self.table.load_excel("Kayan.xlsx","ImportEntriesTemplate"))
 
-        #does it have to be above the layout and container???
-        #or can it be below, along with the addwidget fn?
-        self.label = QLabel()
-        self.icons = []
-
-        icon_paths = ['./Icons/img.png', './Icons/img_1.png', './Icons/img_2.png']
-
-        picmaps = []
-
-        for path in icon_paths:
-            pic_label = QLabel()
-            pixmap = QPixmap(path).scaled(75, 75, aspectRatioMode=Qt.AspectRatioMode.IgnoreAspectRatio,
-                    transformMode=Qt.TransformationMode.SmoothTransformation)
-            picmaps.append(pixmap)
-            pic_label.setPixmap(pixmap)
-            self.icons.append(pic_label)
-
-        self.input = QLineEdit()
+        self.footer = Footer()
 
 
-        layout = QVBoxLayout()
-        layout.addWidget(self.input)
-        layout.addWidget(self.label)
-        for icon in self.icons:
-            layout.addWidget(icon)
+
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(self.input)
+        main_layout.addWidget(self.upload_box)
+        main_layout.addWidget(self.button)
+        main_layout.addWidget(self.footer)
+        main_layout.addWidget(self.table)
 
         container = QWidget()
-        container.setLayout(layout)
-
-
-        self.button = QPushButton("Upload Files")
-        self.button.setMaximumSize(QSize(200, 100))
-        self.button.clicked.connect(self.on_click)
-        self.setMinimumSize(QSize(400, 300))
-
-        layout.addWidget(self.button)
-
-        # Set the central widget of the Window.
+        container.setLayout(main_layout)
         self.setCentralWidget(container)
-
-    def on_click(self):
-        print("CLICKED")
-        self.button.setText("You already clicked me.")
-        self.button.setEnabled(False)
-
-        self.label.setText(self.input.text())
-
 
     def contextMenuEvent(self, e):
         context = QMenu(self)
